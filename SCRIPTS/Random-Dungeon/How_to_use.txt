@@ -1,0 +1,73 @@
+Place the three scripts in the order I've numbered them above Main and under Materials.
+
+1 - This is the main script. It generates random dungeons dynamically according to the settings and tiles I've described below.
+2 - This is a sub script. It makes it so events only move after the player does, in true rogue-like fashion.
+3 - This is a sub script. It sticks a minimap on the screen, invaluable for random dungeons. My only gripe with it is that it sticks it in the middle of the screen, which is kinda annoying.
+
+Place the two images in the Graphics folder (dark_edge.png and dark_edge2.png) into your Graphics/System folder.
+
+The setup is a little hard to explain, but here goes.
+
+*******
+Tiles
+*******
+
+Make a completely blank map. This map should be the size of the dungeon you want, and have a name starting with '@' (Ex. @Dungeon B1F). It doesn't matter what your display name is.
+
+Starting in the top left corner (0,0, for those who want the coordinates), put a tile down (From TileA). This will be your floor tile. You can have two different floor tiles, side by side (0,0 and 1,0); the script will automatically and randomly insert them into the dungeon floor.
+
+Underneath the floor tiles will be your ceiling and wall tiles. These go in (0,1) and (0,2) respectively. Since these tiles are generally autotiles, what you need to do is hold Shift while clicking to place a seamless tile. This goes for both the ceiling tile and wall tile.
+
+Below the wall tile in (0,3) is what I like to call an obstruction tile. These are generally tiles that block the player's advance much like a wall tile, but break up the monotony by not being walls but actual objects such as rocks or pillars. The script will occasionally throw these tiles out to make things more interesting, but in my playthroughs of the demo it doesn't do that too often.
+
+The last editable tile is (0,4), under the obstruction tile. This is simply the tile to use for a blank tile, and can be left empty. The difference can be seen in the demo; with a transparent blank tile, the spaces between the walls are left blank, while with the ceiling tile in that position, it fills in all the spaces between the walls with that tile, creating a labyrinth rather than just rooms in space.
+
+Leave all other tiles blank. It should be noted that only the floor tiles can have two different tiles to choose from; the ceiling, wall, obstruction and blank tiles only accept the tiles on the far left (0,x).
+
+This is enough to generate the dungeon itself, but it will not generate anything else. No exits, entrances or enemies. To do that, you place events in the blank map that the script will auto place for you randomly. This means that yes, the entrance to the dungeon would not be in the same place twice, and once you enter you won't be able to leave without finding the exit. Now, a bit more on events.
+
+*******
+Events
+*******
+
+The events themselves work as they normally do, with a little extras. These extras are quite interesting, and any rogue-like player would know instantly what I mean. Basically, you place a number in the event name and if the number in a certain position is '1', that event is handled differently. There are, as far as I know, two different handling methods that can be used concurrently.
+
+Firstly, if the number in the hundred digit position is 1, the event will be registered on the minimap once discovered for the duration of the floor. This means that NPCs, treasure chests and the like can be shown on the minimap once you've discovered the room they're in, and will not disappear from the minimap once you leave the room as they usually do. As an example, placing '100' in the name of a treasure chest event means that even if I don't open the chest, I know where it is even if I've left the room and am on the other side of the dungeon. Same with NPCs and the like.
+
+Secondly, if the number in the thousand digit position is 1, the event will be shown a little differently on the minimap. The author of the script describes it as 'donut style', where the event square is hollowed out, leaving only a thick outline. Players of rogue-likes will instantly associate this with stairs that lead to the next floor of the dungeon, although this isn't its only use. As an example, placing '1042' in the event name will cause the event to be shown as a square donut on the minimap.
+
+These can be used together. For instance, in the demo, the stairs are marked '1101', and they show up as donut squares that stay even if you leave the room. The ten and one digits don't seem to matter, to my knowledge.
+
+Another thing to note is that these events respawn randomly on reentering a floor. This means that any chests, doors and whatnot that use self switches can be used indefinitely as long as the player keeps exiting and reentering. This does not apply to global switches, so if you want a chest to only be accessible once, that's the only way to do it.
+
+Finally, for move events, it doesn't matter where you transfer the player to in the map. Any random blank space works. Same for all events; you can just place them anywhere in the map. The script will handle things, and it'll never block the player off (In my ~20 runthroughs of the demo).
+
+*******
+Enemies
+*******
+
+And what would a rogue-like be without enemies? Unlike traditional rogue-likes, since this is just a script that generates dungeons, these enemies are more like touch encounters that will home in on the player. What this means is that enemies are generated randomly on the floor, and they then move towards the player. Upon contact with the player or any followers, battle is joined and it turns into a normal RPG using whatever battle system you're using. If you're using an ABS though, I'd recommend just setting up enemy events as usual and ignore the following since the script automatically places events anyways.
+
+Anyways. To set up an enemy event, all you gotta do is make a normal event with a battle process. In the Autonomous Movement section, set the Type to Approach, Speed to Normal and Frequency to Highest. Make the trigger Event Touch. Now there's one last thing that's very important, and the core of the whole thing. In the name of the event, there has to be a '*' symbol. This instantly registers the event as an enemy, and proceeds to have the script handle it entirely. For example, 'Slime*' or 'Bat*' or even just a random numer like '2*'. Finally, to avoid being stuck in an infinite loop of battles, have an Erase Event command under the If Win condition. You can also optionally add an animation such as a Slash animation to signify you destroying the enemy and erasing it.
+
+So what happens now that it's registered as an enemy? Well, here's what happens. The script will automatically copy the event and place it randomly around the map, where it will start to act in a typical rogue-like manner. With script #2, they will only move when the player does, and upon contact with the player, the battle process will start.
+
+Another important thing to note is how many copies of the enemy events will be placed. This is simply the average encounter rate of the map, found in the map's properties in the bottom right corner, labelled 'Steps Average'. So if it's left at the default 30, there'll be up to 30 enemies running around your map. You might think you need to set this pretty high so the player doesn't run out of enemies to fight around the map, but you'd be wrong.
+
+In line 28 of script #1, you can assign a variable to note the number of enemies on the map. At the creation of a floor, this variable will equal the Steps Average of that map, which in the demo is 5. Everytime you kill an enemy, this variable drops by 1, until it hits 0 when you've massacred every enemy on the map. What this means is that you can have a funky Parallel Process Conditional Branch checking for when this variable hits 0, then forcibly creating new enemies. This can be done by having a script call the following code:
+
+$game_map.add_random_enemy
+
+That should cover most of the random battles generated by the script. As a few additional notes, you can completely ignore what I've said above and have random encounters for the floors, or mix it up and have touch encounters on one and random encounters on another, like in the demo. You can also stop events from moving by putting the following in a script call:
+
+stop(n)
+
+where 'n' is the number of turns you want the enemy to be stopped for. This is handy for enemies you can escape from, whereupon escaping the enemy is locked in place for a few turns (5 turns in the demo) and thus allow the player to get away. With a series of conditional branches and parallel processes, it might even be possible to have the player be able to stun enemies before a fight, avoiding a battle. It'll be a pain to setup though.
+
+*******
+End
+*******
+
+And that should be that! Think I've covered everything. It's not easy, but not particularly hard either. If there're any questions, feel free to pop me a line. I'm not a scripter though, so don't expect too much on that note, but I might be able to help you out with debugging and figuring out what's going on.
+
+Kirin, out.
